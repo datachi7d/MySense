@@ -268,8 +268,8 @@ def SendMode(conf,cmd,ON):
     conf['fd'].flushInput()
     try:
         conf['fd'].write(data)
-        # if conf['debug']:
-        #     print("Send command 0x%X 0x%X 0x%X 0x%X 0x%X 0x%x 0x%x" % struct.unpack('!BBBBBBB',data))
+        if conf['debug']:
+            print("Send command 0x%X 0x%X 0x%X 0x%X 0x%X 0x%x 0x%x" % struct.unpack('!BBBBBBB',data))
     except:
         MyLogger.log(modulename,'ERROR','Unable to send mode/state change.')
         raise IOError("Unable to set mode/state")
@@ -281,16 +281,16 @@ def SendMode(conf,cmd,ON):
         while True:
             c = conf['fd'].read(1)
             if not len(c): raise IOError("Failure mode/state change")
-            if ord(c[0]) != 0x42: continue
+            if c[0] != 0x42: continue
             c = conf['fd'].read(1)
             if not len(c): raise IOError("Failure mode/state change")
-            if ord(c[0]) != 0x4D: continue
+            if c[0] != 0x4D: continue
             data = conf['fd'].read(6)
             check = 0x42+0x4D
-            for c in data[0:4]: check += ord(c)
-            # if conf['debug']:
-            #     print("Answer: 0x42 0x4D 0x%X 0x%X 0x%X 0x%x 0x%x 0x%X" % struct.unpack('!BBBBBB',data))
-            if (ord(data[1]) == 0x4) and (ord(data[2]) == cmd) and (ord(data[4])*256 + ord(data[5]) == check):
+            for c in data[0:4]: check += c
+            if conf['debug']:
+                print("Answer: 0x42 0x4D 0x%X 0x%X 0x%X 0x%x 0x%x 0x%X" % struct.unpack('!BBBBBB',data))
+            if (data[1] == 0x4) and (data[2] == cmd) and ((data[4]*256 + data[5]) == check):
                 return True
             # buf = struct.unpack('!BBBBH', data)
             # if (buf[4] == ChckSum):
