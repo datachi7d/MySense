@@ -37,6 +37,7 @@ try:
     import datetime
     import threading
     from time import time
+    from io import IOBase
 except ImportError as e:
     MyLogger.log(modulename,"FATAL","One of the import modules not found: %s" % e)
 
@@ -108,7 +109,7 @@ def raw_write(data, tags, timing):
     if not len(data): return True
     if len(tags): tags = ',type="%s"' % tags
     data = 'raw%s %s %d' % (tags,data,timing)
-    if type(Conf['fd']) is file:
+    if isinstance(Conf['fd'], IOBase):
         try:
             # TO DO: add lock on write as threading is used
             Conf['fd'].write("%s\n" % data)

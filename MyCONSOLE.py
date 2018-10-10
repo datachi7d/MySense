@@ -66,20 +66,20 @@ def registrate(ident):
     if not fnd:
         fnd = hash(ident)
         if not fnd in IdentSeen.keys(): new = True
-    print 'ID: %s at %s' % (str(fnd),datetime.datetime.fromtimestamp(time()).strftime('%b %d %Y %H:%M:%S'))
+    print('ID: %s at %s' % (str(fnd),datetime.datetime.fromtimestamp(time()).strftime('%b %d %Y %H:%M:%S')))
     if (not new) and (cmp(IdentSeen[fnd],ident) == 0): return  # ident is simular as previous
     else: IdentSeen[fnd] = ident.copy()
     fnd = True
     for Id in ("project","serial","geolocation"):
         if not Id in ident.keys():
-            print "Info: in ident record %s field is missing." % Id
+            print("Info: in ident record %s field is missing." % Id)
             fnd = False
     if fnd:
-        print "%s registration of project %s, S/N %s, location %s:" % ('New' if new else 'Updated',ident['project'], ident['serial'],ident['geolocation'])
+        print("%s registration of project %s, S/N %s, location %s:" % ('New' if new else 'Updated',ident['project'], ident['serial'],ident['geolocation']))
     for Id in ("label","serial","description","street","village","province","municipality",'fields','units','calibrations','types','apikey','intern_ip','extern_ip','version'):
         if (Id in ident.keys() and (ident[Id] != None)):
-            print "%15s: " % Id, ident[Id]
-    print ''
+            print("%15s: " % Id, ident[Id])
+    print('')
     return
 
 translateTBL = {
@@ -154,11 +154,11 @@ def publish(**args):
         if not key in args.keys():
             MyLogger.log(modulename,'FATAL',"publish call missing argument %s." % key)
     registrate(args['ident'])
-    print "    %-14s: %s (%s)" % ('time',args['data']['time'],datetime.datetime.fromtimestamp(args['data']['time']).strftime("%Y-%m-%d %H:%M:%S"))
-    for item in sorted(args['data'].iterkeys()):
+    print("    %-14s: %s (%s)" % ('time',args['data']['time'],datetime.datetime.fromtimestamp(args['data']['time']).strftime("%Y-%m-%d %H:%M:%S")))
+    for item in sorted(args['data'].keys()):
         if item != 'time':
             Unit,Type = findInfo(args['ident'],item)
-            print "\t%-10s: %s%s%s" % (item,args['data'][item],trans(Unit),Type)
+            print("\t%-10s: %s%s%s" % (item,args['data'][item],trans(Unit),Type))
 
 # test main loop
 if __name__ == '__main__':

@@ -42,6 +42,7 @@ Conf = {
 
 try:
     import sys
+    import traceback
 except:
     print("FATAL error: no sys to import")
     exit(1)
@@ -108,6 +109,7 @@ def log(name,level,message): # logging to console or log file
     else:
         sys.stderr.write("%s %s: %s" % (name,log_levels[int(level / 10)], message + "\n"))
         if level == FATAL:
+            traceback.print_tb()
             sys.exit("FATAL error. IoS Program Aborted.")
     
 def show_error():               # print sys error

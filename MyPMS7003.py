@@ -69,7 +69,7 @@ Conf = {
     'interval': 120,    # read cycle interval in secs (dflt)
     'bufsize': 30,      # size of the window of values readings max
     'sync': False,      # use thread or not to collect data
-    'debug': 0,         # level 0 .. 5, be more versatile on input data collection
+    'debug': 5,         # level 0 .. 5, be more versatile on input data collection
     'raw': False,       # display raw measurement data with timestamps
     'rawCnt': True,     # convert raw mass (ug/m3) to pcs/0.01qf units
 
@@ -87,6 +87,8 @@ try:
     import MyThreading          # needed for multi threaded input
     import serial
     import struct               # needed for unpack data telegram
+    from subprocess import check_output,CalledProcessError
+    import traceback
 except ImportError as e:
     print("FATAL: Missing module %s" % e)
     exit(1)
@@ -152,7 +154,8 @@ def get_device():
             devices = []
             try:
                 df = subprocess.check_output(["/bin/ls","-l",byId])
-                for i in df.split('\n'):
+                for i in df.decode().split('\n'):
+                    MyLogger.log(modulename,'INFO', "i : %s" % i)
                     if i:
                         info = device_re.match(i)
                         if info:
@@ -163,6 +166,8 @@ def get_device():
                 MyLogger.log(modulename,'ERROR',"No serial USB connected.")
             except (Exception) as error:
                 MyLogger.log(modulename,'ERROR',"Serial USB %s not found, error:%s"%(Conf['usbid'], error))
+                traceback.print_exc()
+                raise error
                 Conf['usbid'] = None
         if serial_dev == None:
             MyLogger.log(modulename,'WARNING',"Please provide serial USB producer info.")
@@ -174,8 +179,8 @@ def get_device():
                 if not Conf[item].isdigit():
                     MyLogger.log(modulename,'FATAL','%s should be nr of seconds' % item)
                 Conf[item] = int(Conf[item])
-	    if type(Conf[item]) is bool:
-		Conf[item] = 1 if Conf[item] else 0
+        if type(Conf[item]) is bool:
+            Conf[item] = 1 if Conf[item] else 0
         MyLogger.log(modulename,'INFO',"Sample interval cycle is set to %d seconds." % Conf['interval'])
         MyLogger.log(modulename,'INFO',"(%s) values are in (%s)" % (','.join(Conf['fields']),','.join(Conf['units'])))
         try:
@@ -396,13 +401,14 @@ def PMSread(conf):
                     else:
                         PassiveRead(conf)
                         continue
-                elif ord(c[0]) == 0x42:
+                elif c[0] == 0x42:
                     c = conf['fd'].read(1) # 2nd byte header
                     if len(c) >= 1:
-                        if ord(c[0]) == 0x4d:
+                        if c[0] == 0x4d:
                             break;
             except:
                 ErrorCnt += 1
+                traceback.print_exc()
                 if ErrorCnt >= 10:
                         raise IOError("Sensor PMS read error.")
                 continue                   # try next data telegram
@@ -420,7 +426,7 @@ def PMSread(conf):
         if cnt and (StrtTime+cnt < time()): continue   # skip measurement if time < 1 sec
 
         check = 0x42 + 0x4d # sum check every byte from HEADER to ERROR byte
-        for c in buff[0:28]: check += ord(c)
+        for c in buff[0:28]: check += c
         data = struct.unpack('!HHHHHHHHHHHHHBBH', buff)
         if not sum(data[PMS_PCNT_0P3:PMS_VER]):
             # first reads show 0 particul counts, skip telegram
@@ -442,11 +448,6 @@ def PMSread(conf):
             conf['firmware'] = str(data[PMS_VER])
             MyLogger.log(modulename,'INFO','Device %s, firmware %s' % (conf['type'],conf['firmware']))
 
-        # if conf['debug']:
-        #     print 'Frame len [byte]            :', str(data[PMS_FRAME_LENGTH])
-        #     print 'Version                     :', str(data[PMS_VER])
-        #     print 'Error code                  :', str(data[PMS_ERROR])
-        #     print 'Check code                  : 0x%04X' % (data[PMS_SUMCHECK])
         sample = {}
         for fld in PM_fields:
             # concentrations in unit ug/m3
@@ -545,6 +546,7 @@ def registrate():
 def Add(conf):
     ''' routine called from thread, to add to buffer and calculate average '''
     sample = {}
+    # conf['debug'] = True
     while True:
         try:
             # if sleeping will have waited 30 secs
@@ -555,11 +557,12 @@ def Add(conf):
             conf['Serial_Errors'] += 1
         except Exception:
             conf['Serial_Errors'] += 1
+            traceback.print_exc()
             MyLogger.log(modulename,'ERROR','error on reading serial.')
         if conf['Serial_Errors'] > 20:
             conf['fd'].device.close()
             conf['fd'] = None
-	    MyLogger.log(modulename,"WARNING","Serial errors limit of 20 errors reached")
+            MyLogger.log(modulename,"WARNING","Serial errors limit of 20 errors reached")
             raise IOError("SDS011 serial errors")
         if not conf['Serial_Errors']: break
     values = { "time": int(time())}; index = 0
@@ -586,7 +589,7 @@ def Add(conf):
     if len(data):
         if conf['debug']:
             print("raw,sensor=%s %s %d000" % (conf['type'][-7:],','.join(data),values['time']*1.0))
-        elif ('raw' in conf.keys()) and (type(conf['raw'] is module):
+        elif ('raw' in conf.keys()) and (type(conf['raw']) is module):
             conf['raw'].publish(tag=conf['type'][-7:].lower(),data=','.join(data))
     return values
 
@@ -600,7 +603,7 @@ def getdata():
         MyLogger.log(modulename,'WARNING',"Sensor input failure")
     return {}
 
-Conf['serial'] = PMSread	# Add needs this global variable
+Conf['serial'] = PMSread    # Add needs this global variable
 
 # standalone test main loop
 if __name__ == '__main__':

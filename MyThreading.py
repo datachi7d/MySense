@@ -64,7 +64,7 @@ class MyThreading:
         self.SYNC = inits['sync']         # in debug mode no threading
         self.DEBUG = inits['DEBUG']       # debug modus
         self.callback = args['callback']  # routine to add sensor value
-	self.conf = inits['conf']         # arg valuees for callback
+        self.conf = inits['conf']         # arg valuees for callback
         self.pmin = float(inits['minPerc']) # minimal perc on avarage calc
         if self.pmin < 0: self.pmin = 0
         self.pmax = float(inits['maxPerc']) # maximal perc on avarage calc

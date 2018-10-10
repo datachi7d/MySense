@@ -73,6 +73,8 @@ try:
     from datetime import date
     import argparse
     import MyLogger
+    from importlib import reload
+
     try:
         import ConfigParser
     except ImportError as e:
@@ -86,7 +88,7 @@ except ImportError:
     exit(1)
 
 reload(sys)  
-sys.setdefaultencoding('utf8')
+# sys.setdefaultencoding('utf8')
 
 # global data Conf is the central dictunary for global values
 Conf = {}       # data dict for configuration variables, values and static values
@@ -210,8 +212,8 @@ def read_configuration():
                     options = ['home','pid','user','group','start_dir','interval','raw']
                 elif key == 'logging':
                     options = ['level','file']
-		elif key == 'raw':
-		    options = ['raw','hostname','user','password','file','database']
+                elif key == 'raw':
+                    options = ['raw','hostname','user','password','file','database']
             #MyLogger.log(modulename,'DEBUG','Configuring module %s: options %s.' % (key,', '.join(config.options(key))) )
             # get options allowed to be redefined by the plugin
             for opt in config.options(key):
@@ -912,8 +914,7 @@ def sensorread():
                         Conf[Out]['module'].publish(
                             ident = rec['ident'],
                             data = rec['data'],
-                            internet = Conf['internet']
-                        )
+                            internet = Conf['internet'])
                         deQueue(Out)
                     except IOError:
                         if 'fd' in Conf[Out]['module'].Conf.keys():
@@ -929,7 +930,7 @@ def sensorread():
                                 Conf['outputs'].remove(Out)
                                 MyLogger.log(modulename,'ERROR','Publishing for %s permanent error.' % Out)
                                 break
-                    except StandardError as err:
+                    except Exception as err:
                         if not 'ErrorCount' in Conf[Out].keys():
                             Conf[Out]['ErrorCount'] = 0
                         Conf[Out]['ErrorCount'] += 1
@@ -1109,7 +1110,7 @@ else:                              ## service mode     ===========
             LastTime = time()
             try:
                 sensorread()            # ======================== RUN
-            except IOError, e:
+            except e as IOError:
                 for name in Conf.keys():
                     if Conf[name].has_key('fd') and Conf[name,'id']:
                         try:
